@@ -66,6 +66,18 @@ class EqualWeightPortfolio:
         """
         TODO: Complete Task 1 Below
         """
+        # Calculate equal weights for the included assets
+        number_of_assets = len(assets)
+        weight = 1 / number_of_assets if number_of_assets > 0 else 0
+        
+        # Set weights for each asset
+        for asset in assets:
+            self.portfolio_weights[asset] = weight
+        
+        # Set weights for excluded assets to 0
+        self.portfolio_weights[self.exclude] = 0
+
+        # print(self.portfolio_weights)
 
         """
         TODO: Complete Task 1 Above
@@ -117,7 +129,20 @@ class RiskParityPortfolio:
         """
         TODO: Complete Task 2 Below
         """
+        # Calculate daily returns for each asset
+        returns = df[assets].pct_change()
 
+        for i in range(self.lookback + 1, len(df)):
+            R_n = df_returns.copy()[assets].iloc[i - self.lookback : i]
+            volatilities = R_n.std()
+            inv_vol = 1/volatilities
+            sum_inv_vol = inv_vol.sum()
+            # print(sum_inv_vol)
+            
+            self.portfolio_weights.loc[df.index[i], assets] = inv_vol / sum_inv_vol
+
+
+        # print(self.portfolio_weights)
         """
         TODO: Complete Task 2 Above
         """
@@ -175,6 +200,7 @@ class MeanVariancePortfolio:
 
         self.portfolio_weights.ffill(inplace=True)
         self.portfolio_weights.fillna(0, inplace=True)
+        # print(self.portfolio_weights)
 
     def mv_opt(self, R_n, gamma):
         Sigma = R_n.cov().values
@@ -192,8 +218,16 @@ class MeanVariancePortfolio:
 
                 # Sample Code: Initialize Decision w and the Objective
                 # NOTE: You can modify the following code
-                w = model.addMVar(n, name="w", ub=1)
-                model.setObjective(w.sum(), gp.GRB.MAXIMIZE)
+                # w = model.addMVar(n, name="w", ub=1)
+                # model.setObjective(w.sum(), gp.GRB.MAXIMIZE)
+
+                w = model.addMVar(n, lb=0, name="w")  # Add non-negative weights constraint (weight is a vector)
+                model.addConstr(w.sum() == 1, name="leverage")  # Add leverage constraint
+
+                # Set the objective: Maximize mu'*w - 0.5*gamma*w'*Sigma*w
+                portfolio_return = mu @ w
+                portfolio_risk = w @ Sigma @ w
+                model.setObjective(portfolio_return - 0.5 * gamma * portfolio_risk, gp.GRB.MAXIMIZE)
 
                 """
                 TODO: Complete Task 3 Below
