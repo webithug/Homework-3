@@ -221,7 +221,7 @@ class MeanVariancePortfolio:
                 # w = model.addMVar(n, name="w", ub=1)
                 # model.setObjective(w.sum(), gp.GRB.MAXIMIZE)
 
-                w = model.addMVar(n, lb=0, name="w")  # Add non-negative weights constraint (weight is a vector)
+                w = model.addMVar(n, lb=0, name="w")  # Add non-negative weights constraint (weight is a n-dimension vector)
                 model.addConstr(w.sum() == 1, name="leverage")  # Add leverage constraint
 
                 # Set the objective: Maximize mu'*w - 0.5*gamma*w'*Sigma*w
